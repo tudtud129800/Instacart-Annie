@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Annie Tan — PM Dashboard</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #F5F0E8;
+    color: #1a1a1a;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(0,61,41,0.13) 1px, transparent 1px);
+    background-size: 24px 24px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .nav {
+    background: #003D29;
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .nav-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .nav-logo { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .nav-logo-emoji { font-size: 20px; line-height: 1; }
+  .nav-wordmark { font-size: 17px; font-weight: 800; color: #F5F0E8; letter-spacing: -0.3px; }
+  .nav-divider { width: 1px; height: 20px; background: rgba(245,240,232,0.2); margin: 0 2px; flex-shrink: 0; }
+  .nav-section { font-size: 12px; color: rgba(245,240,232,0.6); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .nav-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .nav-avatar { width: 28px; height: 28px; border-radius: 50%; background: #FF6B2B; color: #fff; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; line-height: 1; text-align: center; }
+  .nav-name { font-size: 12px; font-weight: 600; color: rgba(245,240,232,0.8); }
+
+  .live-pill { display: flex; align-items: center; gap: 5px; background: rgba(184,224,74,0.12); border: 1px solid rgba(184,224,74,0.25); border-radius: 20px; padding: 3px 10px; font-size: 10px; font-weight: 700; color: #B8E04A; }
+  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #ff3b30; animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
+
+  /* MOBILE TOP NAV */
+  .mobile-topnav { display: none; background: #EDE8DF; border-bottom: 1px solid #ddd8ce; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; position: sticky; top: 56px; z-index: 99; }
+  .mobile-topnav::-webkit-scrollbar { display: none; }
+  .mobile-topnav-inner { display: flex; align-items: center; padding: 0 8px; gap: 2px; min-width: max-content; }
+  .mobile-topnav-item { display: flex; align-items: center; gap: 5px; padding: 10px 12px; font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.4px; text-decoration: none; border-bottom: 2px solid transparent; white-space: nowrap; transition: color 0.15s, border-color 0.15s; }
+  .mobile-topnav-item:hover, .mobile-topnav-item.active { color: #003D29; border-bottom-color: #003D29; }
+  .mobile-topnav-icon { font-size: 13px; }
+
+  .layout { display: flex; position: relative; z-index: 1; }
+  .page-wrapper { flex: 1; display: flex; justify-content: center; }
+
+  /* SIDEBAR — 4 items only: Overview, Metrics, Progress, Contact */
+  .sidebar {
+    width: 64px;
+    position: sticky;
+    top: 56px;
+    height: calc(100vh - 56px);
+    background: #EDE8DF;
+    border-right: 1px solid #ddd8ce;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 0;
+    gap: 4px;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+  .sidebar-item { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px; border-radius: 10px; cursor: pointer; transition: background 0.15s; text-decoration: none; width: 58px; }
+  .sidebar-item:hover { background: rgba(0,61,41,0.07); }
+  .sidebar-item.active { background: rgba(0,61,41,0.1); }
+  .sidebar-item.active .sidebar-icon { opacity: 1; }
+  .sidebar-item.active .sidebar-label { color: #003D29; }
+  .sidebar-icon { font-size: 15px; line-height: 1; opacity: 0.45; transition: opacity 0.15s; }
+  .sidebar-item:hover .sidebar-icon, .sidebar-item.active .sidebar-icon { opacity: 1; }
+  .sidebar-label { font-size: 8.5px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.3px; text-align: center; line-height: 1.25; transition: color 0.15s; width: 100%; }
+  .sidebar-item:hover .sidebar-label { color: #003D29; }
+  .sidebar-divider { width: 28px; height: 1px; background: #cdc8be; margin: 6px 0; }
+
+  .page { flex: 1; max-width: 860px; padding: 24px 28px 64px; min-width: 0; }
+
+  .module-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .module-number { font-size: 10px; font-weight: 800; color: #9ca3af; letter-spacing: 1px; }
+  .module-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: #6b7280; }
+  .module-line { flex: 1; height: 1px; background: #e5e7eb; }
+
+  .header-card { background: #003D29; border-radius: 16px; padding: 24px; margin-bottom: 24px; position: relative; overflow: hidden; }
+  .header-card::after { content: ''; position: absolute; bottom: -40px; right: -40px; width: 160px; height: 160px; border-radius: 50%; background: #B8E04A; opacity: 0.12; pointer-events: none; }
+  .header-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; gap: 12px; }
+  .header-eyebrow { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: #B8E04A; margin-bottom: 6px; }
+  .header-name { font-size: 26px; font-weight: 800; color: #F5F0E8; margin-bottom: 4px; }
+  .header-sub { font-size: 12px; color: rgba(245,240,232,0.55); }
+  .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; }
+  .status-pill { background: #F5F0E8; color: #003D29; font-size: 11px; font-weight: 800; padding: 5px 12px; border-radius: 20px; display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; animation: pulse 2s ease-in-out infinite; flex-shrink: 0; }
+  .header-meta { font-size: 11px; color: rgba(245,240,232,0.4); text-align: right; line-height: 1.7; }
+
+  .progress-wrap { margin-bottom: 18px; position: relative; z-index: 1; }
+  .progress-label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .progress-label { font-size: 11px; font-weight: 700; color: rgba(245,240,232,0.6); text-transform: uppercase; letter-spacing: 0.8px; }
+  .progress-pct { font-size: 11px; font-weight: 800; color: #B8E04A; }
+  .progress-track { height: 5px; background: rgba(245,240,232,0.12); border-radius: 10px; overflow: hidden; }
+  .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #B8E04A, #7fc235); border-radius: 10px; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
+
+  .header-divider { height: 1px; background: rgba(245,240,232,0.12); margin-bottom: 18px; }
+  .header-salutation { font-size: 13px; font-weight: 800; color: #F5F0E8; margin-bottom: 8px; position: relative; z-index: 1; }
+  .header-intro { font-size: 14px; line-height: 1.85; color: rgba(245,240,232,0.8); position: relative; z-index: 1; }
+
+  .kpi-section { margin-bottom: 24px; }
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .kpi-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 16px 14px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; transition: border-color 0.2s; }
+  .kpi-card:hover { border-color: #FF6B2B; }
+  .kpi-icon { font-size: 20px; line-height: 1; }
+  .kpi-label { font-size: 12px; font-weight: 700; color: #111827; }
+  .skill-bar-wrap { width: 100%; display: flex; flex-direction: column; gap: 4px; margin-top: 2px; }
+  .skill-bar-track { height: 4px; background: #f3f4f6; border-radius: 4px; overflow: hidden; width: 100%; }
+  .skill-bar-fill { height: 100%; width: 0%; border-radius: 4px; background: #FF6B2B; transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1); }
+  .skill-bar-fill.green { background: #003D29; }
+  .skill-bar-fill.lime  { background: #B8E04A; }
+  .skill-bar-fill.blue  { background: #6366f1; }
+  .skill-bar-val { font-size: 10px; font-weight: 700; color: #9ca3af; align-self: flex-end; }
+
+  .roadmap-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 22px 20px; margin-bottom: 24px; }
+  .card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 36px; gap: 12px; }
+  .card-title { font-size: 14px; font-weight: 700; color: #003D29; }
+  .card-sub { font-size: 12px; color: #9ca3af; margin-top: 3px; }
+  .card-badge { font-size: 11px; font-weight: 700; color: #003D29; background: #e8f5ee; padding: 4px 10px; border-radius: 6px; flex-shrink: 0; }
+
+  .timeline { position: relative; padding-bottom: 8px; }
+  .timeline-track { position: absolute; top: 19px; left: 20px; right: 20px; height: 3px; background: #e5e7eb; z-index: 0; border-radius: 2px; }
+  .timeline-track-fill { height: 100%; background: #FF6B2B; width: 75%; border-radius: 2px; }
+  .timeline-nodes { display: flex; justify-content: space-between; position: relative; z-index: 1; }
+  .node-wrap { display: flex; flex-direction: column; align-items: center; flex: 1; }
+  .node-btn { width: 38px; height: 38px; border-radius: 50%; border: 3px solid #FF6B2B; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all 0.2s; position: relative; z-index: 2; flex-shrink: 0; }
+  .node-btn.active { background: #FF6B2B; box-shadow: 0 0 0 5px rgba(255,107,43,0.15); }
+  .node-btn.future { border-color: #d1d5db; background: #f9fafb; }
+  .node-btn.future.active { border-color: #FF6B2B; background: #FF6B2B; box-shadow: 0 0 0 5px rgba(255,107,43,0.15); }
+  .node-label { margin-top: 9px; font-size: 11px; font-weight: 600; color: #6b7280; text-align: center; line-height: 1.4; }
+  .node-label.active { color: #FF6B2B; }
+  .node-date { font-size: 10px; color: #9ca3af; text-align: center; margin-top: 2px; }
+  .node-expand { margin-top: 28px; background: #fafaf9; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; display: none; animation: fadeIn 0.2s ease; }
+  .node-expand.visible { display: block; }
+  .node-expand.instacart-expand { background: #eef7f2; border-color: #003D29; border-width: 1.5px; }
+  .node-expand.instacart-expand .expand-company { color: #003D29; }
+  .node-expand.instacart-expand .expand-why-header { color: #2d7a52; }
+  .node-expand.instacart-expand .expand-why-body { color: #4b5563; }
+  .node-expand.instacart-expand .expand-tag.tag-planned { background: #003D29; color: #F5F0E8; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+  .expand-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; gap: 10px; }
+  .expand-company { font-size: 14px; font-weight: 800; color: #111827; margin-bottom: 2px; }
+  .expand-role { font-size: 13px; color: #6b7280; }
+  .expand-tag { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 6px; flex-shrink: 0; }
+  .tag-shipped { background: #e8f5ee; color: #003D29; }
+  .tag-active { background: #fff3ed; color: #FF6B2B; }
+  .tag-planned { background: rgba(184,224,74,0.2); color: #003D29; }
+  .expand-body { font-size: 14px; line-height: 1.85; color: #4b5563; margin-bottom: 16px; }
+  .expand-why-header { font-size: 14px; font-weight: 800; color: #111827; margin-bottom: 8px; }
+  .expand-why-body { font-size: 14px; line-height: 1.85; color: #4b5563; margin-bottom: 14px; }
+  .skill-blocks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .skill-block { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+  .skill-block-icon { font-size: 18px; line-height: 1; }
+  .skill-block-name { font-size: 12px; font-weight: 700; color: #374151; line-height: 1.3; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 22px; }
+
+  .ab-chart-wrap { margin-top: 16px; }
+  .ab-legend-row { display: flex; gap: 14px; margin-bottom: 10px; }
+  .ab-legend-item { display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; color: #6b7280; }
+  .ab-legend-line { width: 16px; height: 2px; border-radius: 2px; }
+  .ab-chart-svg { width: 100%; display: block; }
+  .ab-delta { margin-top: 12px; padding: 8px 12px; background: #fff3ed; border: 1px solid #FF6B2B; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .ab-delta-label { font-size: 11px; color: #6b7280; }
+  .ab-delta-val { font-size: 12px; font-weight: 800; color: #FF6B2B; }
+
+  .next-action-card { background: #78034b; border-radius: 14px; padding: 22px; position: relative; overflow: hidden; height: 100%; }
+  .next-action-card::after { content: ''; position: absolute; bottom: -30px; right: -30px; width: 100px; height: 100px; border-radius: 50%; background: #ff3eb5; opacity: 0.15; pointer-events: none; }
+  .next-action-title { font-size: 14px; font-weight: 700; color: #F5F0E8; margin-bottom: 4px; }
+  .next-action-sub { font-size: 12px; color: rgba(245,240,232,0.45); margin-bottom: 16px; }
+  .action-rows { display: flex; flex-direction: column; gap: 8px; position: relative; z-index: 1; }
+  .action-row { display: flex; align-items: center; justify-content: space-between; background: rgba(245,240,232,0.08); border: 1px solid rgba(245,240,232,0.12); border-radius: 8px; padding: 10px 14px; cursor: pointer; transition: background 0.2s; text-decoration: none; }
+  .action-row:hover { background: rgba(245,240,232,0.16); }
+  .action-label { font-size: 12px; font-weight: 600; color: #F5F0E8; }
+  .action-value { font-size: 11px; color: #ff3eb5; font-weight: 700; }
+
+  @media (max-width: 768px) {
+    .nav-section, .nav-divider { display: none; }
+    .sidebar { width: 52px; }
+    .sidebar-label { display: none; }
+    .header-top { flex-direction: column; }
+    .header-right { align-items: flex-start; }
+    .header-meta { text-align: left; }
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .two-col { grid-template-columns: 1fr; }
+    .skill-blocks { grid-template-columns: repeat(2, 1fr); }
+    .node-date { display: none; }
+  }
+
+  @media (max-width: 480px) {
+    .sidebar { display: none; }
+    .mobile-topnav { display: block; }
+    .page { padding: 16px 12px 48px; }
+    .nav { padding: 0 16px; }
+    .nav-name { display: none; }
+    .header-card { padding: 20px 16px; }
+    .header-name { font-size: 22px; }
+    .status-pill { font-size: 10px; padding: 4px 10px; }
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .roadmap-card { padding: 18px 14px; }
+    .card-header { flex-direction: column; gap: 8px; margin-bottom: 28px; }
+    .node-btn { width: 32px; height: 32px; font-size: 13px; }
+    .node-label { font-size: 10px; }
+    .node-expand { padding: 16px 14px; }
+    .expand-body, .expand-why-body { font-size: 13px; }
+    .skill-blocks { grid-template-columns: repeat(2, 1fr); }
+    .next-action-card { padding: 18px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div class="nav-left">
+    <div class="nav-logo">
+      <span class="nav-logo-emoji">🥕</span>
+      <span class="nav-wordmark">instacart</span>
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-section">APM 2026 Recruiting · Candidate Dashboard</div>
+  </div>
+  <div class="nav-right">
+    <div class="live-pill"><div class="live-dot"></div>Live</div>
+    <div class="nav-avatar">AT</div>
+    <div class="nav-name">Annie Tan</div>
+  </div>
+</div>
+
+<!-- MOBILE TOP NAV -->
+<div class="mobile-topnav">
+  <div class="mobile-topnav-inner">
+    <a class="mobile-topnav-item active" href="#overview"><span class="mobile-topnav-icon">⊞</span>Overview</a>
+    <a class="mobile-topnav-item" href="#metrics"><span class="mobile-topnav-icon">📊</span>Metrics</a>
+    <a class="mobile-topnav-item" href="#experience"><span class="mobile-topnav-icon">📍</span>Progress</a>
+    <a class="mobile-topnav-item" href="#skills"><span class="mobile-topnav-icon">🚀</span>Ship</a>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- SIDEBAR: Overview, Metrics, Progress, Contact only -->
+  <div class="sidebar">
+    <a class="sidebar-item active" href="#overview">
+      <span class="sidebar-icon">⊞</span>
+      <span class="sidebar-label">Over-<br>view</span>
+    </a>
+    <a class="sidebar-item" href="#metrics">
+      <span class="sidebar-icon">📊</span>
+      <span class="sidebar-label">Metrics</span>
+    </a>
+    <div class="sidebar-divider"></div>
+    <a class="sidebar-item" href="#experience">
+      <span class="sidebar-icon">📍</span>
+      <span class="sidebar-label">Progress</span>
+    </a>
+    <div class="sidebar-divider"></div>
+    <a class="sidebar-item" href="#skills">
+      <span class="sidebar-icon">🚀</span>
+      <span class="sidebar-label">Ship</span>
+    </a>
+  </div>
+
+  <div class="page-wrapper"><div class="page">
+
+    <!-- 01 OVERVIEW -->
+    <div id="overview">
+      <div class="module-header">
+        <span class="module-number">01</span>
+        <span class="module-title">Overview</span>
+        <div class="module-line"></div>
+      </div>
+      <div class="header-card">
+        <div class="header-top">
+          <div>
+            <div class="header-eyebrow">Dashboard &nbsp;|&nbsp; Product Brief</div>
+            <div class="header-name">Annie Tan</div>
+            <div class="header-sub">APM Candidate · Ivey Business School HBA · Philadelphia, PA</div>
+          </div>
+          <div class="header-right">
+            <div class="status-pill"><div class="status-dot"></div>Ready to Ship</div>
+            <div class="header-meta">Priority: High · ETA: Summer 2026<br>Submitted by: Annie Tan<br>Last updated: March 2026</div>
+          </div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-label-row">
+            <span class="progress-label">Ready to Ship</span>
+            <span class="progress-pct">100%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+        </div>
+        <div class="header-divider"></div>
+        <div class="header-salutation">Dear APM Recruiting Team,</div>
+        <div class="header-intro">
+          My name is Annie, an Ivey Business School HBA graduate and Associate at BCG with a background in consulting, venture capital, and product execution. As someone who's worked at the intersection of data-driven problem solving and business strategy, I am drawn to product management for its proximity to the customer - where solutions are constantly tested and shaped by real people. I am eager to bring that lens to Instacart's mission of making food accessible to all.
+        </div>
+      </div>
+    </div>
+
+    <!-- 02 CORE LAUNCH METRICS -->
+    <div id="metrics">
+      <div class="module-header">
+        <span class="module-number">02</span>
+        <span class="module-title">Core Launch Metrics</span>
+        <div class="module-line"></div>
+      </div>
+      <div class="kpi-section">
+        <div class="kpi-row">
+          <div class="kpi-card">
+            <div class="kpi-icon">🧩</div>
+            <div class="kpi-label">Structured Problem Solving</div>
+            <div class="skill-bar-wrap">
+              <div class="skill-bar-track"><div class="skill-bar-fill green" data-w="97"></div></div>
+              <span class="skill-bar-val">97</span>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon">💡</div>
+            <div class="kpi-label">Creative Thinking</div>
+            <div class="skill-bar-wrap">
+              <div class="skill-bar-track"><div class="skill-bar-fill lime" data-w="95"></div></div>
+              <span class="skill-bar-val">95</span>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon">🤝</div>
+            <div class="kpi-label">Collaborative</div>
+            <div class="skill-bar-wrap">
+              <div class="skill-bar-track"><div class="skill-bar-fill" data-w="99"></div></div>
+              <span class="skill-bar-val">99</span>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon">🚀</div>
+            <div class="kpi-label">Execution Driven</div>
+            <div class="skill-bar-wrap">
+              <div class="skill-bar-track"><div class="skill-bar-fill blue" data-w="96"></div></div>
+              <span class="skill-bar-val">96</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 03 PROJECT MILESTONES -->
+    <div id="experience">
+      <div class="module-header">
+        <span class="module-number">03</span>
+        <span class="module-title">Project Milestones</span>
+        <div class="module-line"></div>
+      </div>
+      <div class="roadmap-card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Career Roadmap — Highlighted experiences I'd bring to Instacart</div>
+            <div class="card-sub">Click a milestone to expand</div>
+          </div>
+          <div class="card-badge">4 milestones</div>
+        </div>
+        <div class="timeline">
+          <div class="timeline-track"><div class="timeline-track-fill"></div></div>
+          <div class="timeline-nodes">
+            <div class="node-wrap">
+              <div class="node-btn" id="node0" onclick="toggleNode(0)">🐾</div>
+              <div class="node-label" id="label0">Kabo</div>
+              <div class="node-date">May–Jul 2022</div>
+            </div>
+            <div class="node-wrap">
+              <div class="node-btn" id="node1" onclick="toggleNode(1)">🍬</div>
+              <div class="node-label" id="label1">YERGO!</div>
+              <div class="node-date">2022–2023</div>
+            </div>
+            <div class="node-wrap">
+              <div class="node-btn" id="node2" onclick="toggleNode(2)">💼</div>
+              <div class="node-label" id="label2">BCG</div>
+              <div class="node-date">2023–now</div>
+            </div>
+            <div class="node-wrap">
+              <div class="node-btn future active" id="node3" onclick="toggleNode(3)">🥕</div>
+              <div class="node-label active" id="label3">Instacart</div>
+              <div class="node-date">Summer 2026</div>
+            </div>
+          </div>
+
+          <div class="node-expand" id="expand0">
+            <div class="expand-header">
+              <div>
+                <div class="expand-company">Kabo</div>
+                <div class="expand-role">Growth Marketing · Toronto, ON · May 2022 – Jul 2022</div>
+              </div>
+              <div class="expand-tag tag-shipped">✓ Shipped</div>
+            </div>
+            <div class="expand-body">At Kabo, I applied a data-driven approach to GTM execution - designing and iterating on campaign assets (presale landing page, email strategy, and in-person activations) across channels to refine positioning - ultimately exceeding onboarding targets by 187% by week two.</div>
+            <div class="skill-blocks">
+              <div class="skill-block"><div class="skill-block-icon">📣</div><div class="skill-block-name">GTM Execution</div></div>
+              <div class="skill-block"><div class="skill-block-icon">📊</div><div class="skill-block-name">Data-Driven Iteration</div></div>
+              <div class="skill-block"><div class="skill-block-icon">🎨</div><div class="skill-block-name">Campaign Ownership</div></div>
+            </div>
+          </div>
+
+          <div class="node-expand" id="expand1">
+            <div class="expand-header">
+              <div>
+                <div class="expand-company">YERGO! — Co-Founder</div>
+                <div class="expand-role">Product · London, ON · Jan 2022 – May 2023</div>
+              </div>
+              <div class="expand-tag tag-shipped">✓ Shipped</div>
+            </div>
+            <div class="expand-body">At YERGO, I co-founded a CPG brand - translating 35+ customer interviews into an MVP, designing the full product experience from formulation to shelf. I developed the go-to-market roadmap and cultivated a retail pipeline across 7+ independent Toronto retailers to validate distribution potential.</div>
+            <div class="skill-blocks">
+              <div class="skill-block"><div class="skill-block-icon">🎤</div><div class="skill-block-name">User Research / Problem Identification</div></div>
+              <div class="skill-block"><div class="skill-block-icon">📐</div><div class="skill-block-name">Product Development</div></div>
+              <div class="skill-block"><div class="skill-block-icon">🗺️</div><div class="skill-block-name">GTM Strategy</div></div>
+            </div>
+          </div>
+
+          <div class="node-expand" id="expand2">
+            <div class="expand-header">
+              <div>
+                <div class="expand-company">Boston Consulting Group</div>
+                <div class="expand-role">Associate · Philadelphia, PA · Oct 2024 – Present</div>
+              </div>
+              <div class="expand-tag tag-active">⚡ In Progress</div>
+            </div>
+            <div class="expand-body">At BCG, I applied user research and data to shape investment and growth strategy - leading 100+ user interviews and a 1,500-person survey across 5 software due diligences to inform go/no-go recommendations, GTM roadmaps for acquirers, and platform strategy for parent companies building through acquisition. I also drove a pricing redesign for a B2B2B business, developing a tiered model and 24-week implementation strategy targeting ~$8M in revenue uplift - now in implementation - with buy-in secured from VP-level stakeholders.</div>
+            <div class="skill-blocks">
+              <div class="skill-block"><div class="skill-block-icon">📊</div><div class="skill-block-name">Data & Analytics</div></div>
+              <div class="skill-block"><div class="skill-block-icon">🗣️</div><div class="skill-block-name">Exec Comms & Cross-Functional Collab</div></div>
+              <div class="skill-block"><div class="skill-block-icon">🤝</div><div class="skill-block-name">Stakeholder Management</div></div>
+            </div>
+          </div>
+
+          <div class="node-expand instacart-expand visible" id="expand3">
+            <div class="expand-header">
+              <div>
+                <div class="expand-company">Instacart — APM Program</div>
+                <div class="expand-role">Associate Product Manager · New York, NY · Summer 2026</div>
+              </div>
+              <div class="expand-tag tag-planned">📋 Planned</div>
+            </div>
+            <div class="expand-why-header">Why Instacart?</div>
+            <div class="expand-why-body">
+              Instacart's mission of democratizing food access resonates with me deeply. I'm particularly excited about how Instacart is pursuing that mission right now, positioning itself as the grocery engine behind the AI era, where a single conversation can surface the right products, from the right store, and deliver them to your door. With my background in analytics, consulting, and product execution, I'm eager to contribute to building that future at Instacart.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 04 ANALYSIS -->
+    <div id="skills">
+      <div class="module-header">
+        <span class="module-number">04</span>
+        <span class="module-title">Analysis</span>
+        <div class="module-line"></div>
+      </div>
+      <div class="two-col" style="margin-bottom:24px;">
+        <div class="card">
+          <div class="card-header" style="margin-bottom:0">
+            <div>
+              <div class="card-title">A/B Test Results</div>
+              <div class="card-sub">Instacart APM team composition</div>
+            </div>
+            <div class="card-badge">Significant</div>
+          </div>
+          <div class="ab-chart-wrap">
+            <div class="ab-legend-row">
+              <div class="ab-legend-item"><div class="ab-legend-line" style="background:#d1d5db;"></div>Without Annie</div>
+              <div class="ab-legend-item"><div class="ab-legend-line" style="background:#FF6B2B;"></div>With Annie</div>
+            </div>
+            <svg class="ab-chart-svg" viewBox="0 0 260 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <line x1="0" y1="20" x2="260" y2="20" stroke="#f3f4f6" stroke-width="1"/>
+              <line x1="0" y1="40" x2="260" y2="40" stroke="#f3f4f6" stroke-width="1"/>
+              <line x1="0" y1="60" x2="260" y2="60" stroke="#f3f4f6" stroke-width="1"/>
+              <polyline points="10,62 55,58 100,60 145,55 190,57 250,54" stroke="#d1d5db" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+              <polyline id="variantLine" points="10,62 55,50 100,40 145,28 190,18 250,10" stroke="#FF6B2B" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" fill="none" stroke-dasharray="300" stroke-dashoffset="300"/>
+              <polygon points="10,62 55,50 100,40 145,28 190,18 250,10 250,72 10,72" fill="#FF6B2B" opacity="0.06"/>
+              <circle id="variantDot" cx="250" cy="10" r="4" fill="#FF6B2B" opacity="0"/>
+              <text x="10"  y="78" font-size="7" fill="#9ca3af" text-anchor="middle">W1</text>
+              <text x="55"  y="78" font-size="7" fill="#9ca3af" text-anchor="middle">W2</text>
+              <text x="100" y="78" font-size="7" fill="#9ca3af" text-anchor="middle">W3</text>
+              <text x="145" y="78" font-size="7" fill="#9ca3af" text-anchor="middle">W4</text>
+              <text x="190" y="78" font-size="7" fill="#9ca3af" text-anchor="middle">W5</text>
+              <text x="250" y="78" font-size="7" fill="#9ca3af" text-anchor="middle">W6</text>
+            </svg>
+            <div class="ab-delta">
+              <span class="ab-delta-label">Performance delta</span>
+              <span class="ab-delta-val">↑ Ship it. Recommended.</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="contact">
+          <div class="next-action-card">
+            <div class="next-action-title">Next Action</div>
+            <div class="next-action-sub">One step remaining</div>
+            <div class="action-rows">
+              <a class="action-row" href="mailto:annietan.hba2024@ivey.ca">
+                <span class="action-label">📩 Email Annie</span>
+                <span class="action-value">annietan.hba2024@ivey.ca</span>
+              </a>
+              <a class="action-row" href="https://www.linkedin.com/in/tan-anniee/" target="_blank">
+                <span class="action-label">🔗 LinkedIn</span>
+                <span class="action-value">View profile →</span>
+              </a>
+              <a class="action-row" href="https://drive.google.com/file/d/1tJ4xAnGMfEZ2JR1mz31jLuLu03E62Kgc/view?usp=sharing" target="_blank">
+                <span class="action-label">📄 Resume</span>
+                <span class="action-value">Download →</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div></div>
+</div>
+
+<div style="text-align:center; padding: 20px 0 32px; font-size: 10px; color: #b5afa6; letter-spacing: 0.4px; position: relative; z-index: 1;">
+  Built with Claude Code · 2026
+</div>
+
+<script>
+  let openNode = 3;
+
+  function toggleNode(idx) {
+    const expand = document.getElementById('expand' + idx);
+    const node   = document.getElementById('node'   + idx);
+    const label  = document.getElementById('label'  + idx);
+    if (openNode === idx) {
+      expand.classList.remove('visible');
+      node.classList.remove('active');
+      label.classList.remove('active');
+      openNode = null;
+    } else {
+      if (openNode !== null) {
+        document.getElementById('expand' + openNode).classList.remove('visible');
+        document.getElementById('node'   + openNode).classList.remove('active');
+        document.getElementById('label'  + openNode).classList.remove('active');
+      }
+      expand.classList.add('visible');
+      node.classList.add('active');
+      label.classList.add('active');
+      openNode = idx;
+    }
+  }
+
+  const sections = ['overview','metrics','experience','skills','contact'];
+  const sidebarItems = document.querySelectorAll('.sidebar-item');
+  const mobileItems  = document.querySelectorAll('.mobile-topnav-item');
+  window.addEventListener('scroll', () => {
+    let cur = 'overview';
+    sections.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && window.scrollY >= el.offsetTop - 100) cur = id;
+    });
+    sidebarItems.forEach(item => item.classList.toggle('active', item.getAttribute('href') === '#' + cur));
+    mobileItems.forEach(item => item.classList.toggle('active', item.getAttribute('href') === '#' + cur));
+  });
+
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      document.getElementById('progressFill').style.width = '100%';
+      document.querySelectorAll('.skill-bar-fill').forEach(el => { el.style.width = el.dataset.w + '%'; });
+      const vLine = document.getElementById('variantLine');
+      const vDot  = document.getElementById('variantDot');
+      if (vLine) { vLine.style.transition = 'stroke-dashoffset 1.4s cubic-bezier(0.4,0,0.2,1)'; vLine.style.strokeDashoffset = '0'; }
+      if (vDot)  { setTimeout(() => { vDot.style.transition = 'opacity 0.3s'; vDot.style.opacity = '1'; }, 1400); }
+    }, 300);
+  });
+</script>
+</body>
+</html>
